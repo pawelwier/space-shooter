@@ -1,6 +1,8 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use super::{components::Player, PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT};
+use super::components::{Laser, Player};
+use super::{PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, LASER_SPEED};
+use super::helpers::{key_just_pressed, key_pressed};
 
 pub fn spawn_player(
     mut commands: Commands,
@@ -12,7 +14,7 @@ pub fn spawn_player(
     commands.spawn(
         (
             SpriteBundle {
-                transform: Transform::from_xyz(window.width() / 2.0, PLAYER_HEIGHT / 2.0, 0.0),
+                transform: Transform::from_xyz(window.width() / 2.0, PLAYER_HEIGHT, 0.0),
                 texture: asset_server.load("sprites/player_orange.png"),
                 ..default()
             },
@@ -20,16 +22,6 @@ pub fn spawn_player(
         )
     );
 }
-
-fn key_pressed (
-    keyboard_input: &Res<Input<KeyCode>>,
-    keycode: KeyCode
-) -> bool { keyboard_input.pressed(keycode) }
-
-fn key_just_pressed (
-    keyboard_input: &Res<Input<KeyCode>>,
-    keycode: KeyCode
-) -> bool { keyboard_input.just_pressed(keycode) }
 
 pub fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
@@ -51,8 +43,8 @@ pub fn player_movement(
         // if key_pressed(&keyboard_input, KeyCode::Up) { y = 1.0; }
         // if key_pressed(&keyboard_input, KeyCode::Down) { y = -1.0; }
 
-        let border_left = transform.translation.x < (PLAYER_WIDTH / 2.0) && x == -1.0;
-        let border_right = transform.translation.x > window.width() - PLAYER_WIDTH / 2.0 && x == 1.0;
+        let border_left = transform.translation.x <= (PLAYER_WIDTH / 2.0) && x == -1.0;
+        let border_right = transform.translation.x >= window.width() - PLAYER_WIDTH / 2.0 && x == 1.0;
         if  border_left || border_right { return; }
 
         if x != 0.0 || y != 0.0 {
@@ -62,4 +54,37 @@ pub fn player_movement(
         
         transform.translation += direction * PLAYER_SPEED * time.delta_seconds();        
     }
+}
+
+pub fn shoot_laser(
+    mut commands: Commands,
+    player_query: Query<&Transform, With<Player>>,
+    asset_server: Res<AssetServer>,
+    keyboard_input: Res<Input<KeyCode>>
+) {
+    if let Ok(player_transform) = player_query.get_single() {
+        if key_just_pressed(&keyboard_input, KeyCode::Space) {    
+            let x = player_transform.translation.x;
+            commands.spawn(
+                (
+                    SpriteBundle {
+                        transform: Transform::from_xyz(x, PLAYER_HEIGHT * 2.0, 0.0),
+                        texture: asset_server.load("sprites/laser_green.png"),
+                        ..default()
+                    },
+                    Laser {}
+                )
+            );
+        }
+    }
+}
+
+pub fn laser_movement(
+    mut laser_query: Query<&mut Transform, With<Laser>>,
+    time: Res<Time>
+) {
+    for mut transform in laser_query.iter_mut() {
+        let direction = Vec3::new(0.0, 1.0, 0.0);
+        transform.translation += direction * LASER_SPEED * time.delta_seconds()
+    } 
 }

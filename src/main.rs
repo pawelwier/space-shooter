@@ -1,5 +1,5 @@
-use bevy::{prelude::*, window::PrimaryWindow};
-use player::systems::{spawn_player, player_movement};
+use bevy::{prelude::*, window::{PrimaryWindow, WindowResolution}};
+use player::systems::{spawn_player, player_movement, shoot_laser, laser_movement};
 
 mod player;
 
@@ -10,13 +10,15 @@ fn main() {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "SPACE SHOOTER".to_string(),
+                    resizable: false,
+                    resolution: WindowResolution::new(1000.0, 1000.0),
                     ..Default::default()
                 }),
                 ..Default::default()
             })
         )
         .add_systems(Startup, (spawn_camera, spawn_player))
-        .add_systems(Update, player_movement)
+        .add_systems(Update, (player_movement, shoot_laser, laser_movement))
         .run();
 }
 
