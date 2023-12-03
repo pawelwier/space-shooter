@@ -1,7 +1,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
+use crate::object::meteor::{METEOR_LARGE_HEIGHT, METEOR_SMALL_HEIGHT};
+use crate::object::meteor::components::{Meteor, MeteorSize};
+
 use super::components::{Laser, Player};
-use super::{PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, LASER_SPEED};
+use super::{PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, LASER_SPEED, LASER_HEIGHT};
 use super::helpers::{key_just_pressed, key_pressed};
 
 pub fn spawn_player(
@@ -80,11 +83,36 @@ pub fn shoot_laser(
 }
 
 pub fn laser_movement(
-    mut laser_query: Query<&mut Transform, With<Laser>>,
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    mut laser_query: Query<(&mut Transform, Entity), With<Laser>>,
     time: Res<Time>
 ) {
-    for mut transform in laser_query.iter_mut() {
+    let window = window_query.get_single().unwrap();
+
+    for (mut transform, entity) in laser_query.iter_mut() {
         let direction = Vec3::new(0.0, 1.0, 0.0);
-        transform.translation += direction * LASER_SPEED * time.delta_seconds()
+        transform.translation += direction * LASER_SPEED * time.delta_seconds();
+
+        if transform.translation.y >= window.height() {
+            commands.entity(entity).despawn();
+        }
     } 
+}
+
+pub fn laser_hit_meteor(
+    mut commands: Commands,
+    mut laser_query: Query<(&Transform, Entity), With<Laser>>,
+    mut meteor_query: Query<(&Transform, &Meteor, Entity), With<Meteor>>
+) {
+    for (laser_transform, laser_entity) in laser_query.iter_mut() {
+        for (meteor_transform, meteor, meteor_entity) in meteor_query.iter_mut() {
+            let meteor_size = if meteor.size == MeteorSize::Large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
+            // TODO: Fix measure distance
+            if laser_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + LASER_HEIGHT / 2.0 {
+                commands.entity(laser_entity).despawn();
+                commands.entity(meteor_entity).despawn();
+            }
+        }
+    }
 }
