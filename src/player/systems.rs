@@ -1,11 +1,13 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
+use crate::explosion::systems::spawn_explosion;
+use crate::object::meteor::systems::spawn_small_meteors;
 use crate::object::meteor::{METEOR_LARGE_HEIGHT, METEOR_SMALL_HEIGHT};
 use crate::object::meteor::components::{Meteor, MeteorSize};
 
-use super::components::{Laser, Player};
+use super::components::{Laser, Player, PlayerMovement};
 use super::{PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, LASER_SPEED, LASER_HEIGHT};
-use super::helpers::{key_just_pressed, key_pressed};
+use super::helpers::{key_just_pressed, key_pressed, key_just_released};
 
 pub fn spawn_player(
     mut commands: Commands,
@@ -21,9 +23,25 @@ pub fn spawn_player(
                 texture: asset_server.load("sprites/player_orange.png"),
                 ..default()
             },
-            Player {}
+            Player {
+                movement: PlayerMovement::None
+            }
         )
     );
+}
+
+fn handle_player_turn(
+    keyboard_input: Res<Input<KeyCode>>,
+    transform: &mut Transform
+) {
+    if key_just_pressed(&keyboard_input, KeyCode::Left) 
+        || key_just_released(&keyboard_input, KeyCode::Right) { 
+            transform.rotate_y(-15.0);
+        }
+    if key_just_pressed(&keyboard_input, KeyCode::Right) 
+        || key_just_released(&keyboard_input, KeyCode::Left) {
+            transform.rotate_y(15.0);
+        }
 }
 
 pub fn player_movement(
@@ -37,7 +55,7 @@ pub fn player_movement(
         let window = window_query.get_single().unwrap();
 
         let mut direction = Vec3::ZERO;
-        let (mut x, mut y) = (0.0, 0.0);
+        let (mut x, /*mut*/ y) = (0.0, 0.0);
 
         // TODO: keep y for vertical movement
 
@@ -54,6 +72,8 @@ pub fn player_movement(
             direction += Vec3::new(x, y, 0.0);
             direction = direction.normalize();
         }
+
+        handle_player_turn(keyboard_input, &mut transform);
         
         transform.translation += direction * PLAYER_SPEED * time.delta_seconds();        
     }
@@ -103,15 +123,46 @@ pub fn laser_movement(
 pub fn laser_hit_meteor(
     mut commands: Commands,
     mut laser_query: Query<(&Transform, Entity), With<Laser>>,
-    mut meteor_query: Query<(&Transform, &Meteor, Entity), With<Meteor>>
+    mut meteor_query: Query<(&Transform, &Meteor, Entity), With<Meteor>>,
+    asset_server: Res<AssetServer>,
 ) {
     for (laser_transform, laser_entity) in laser_query.iter_mut() {
         for (meteor_transform, meteor, meteor_entity) in meteor_query.iter_mut() {
-            let meteor_size = if meteor.size == MeteorSize::Large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
+            let is_large = meteor.size == MeteorSize::Large;
+            let meteor_size = if is_large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
             // TODO: Fix measure distance
             if laser_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + LASER_HEIGHT / 2.0 {
                 commands.entity(laser_entity).despawn();
                 commands.entity(meteor_entity).despawn();
+                spawn_explosion(
+                    &mut commands,
+                    (laser_transform.translation.x, laser_transform.translation.y),
+                    &asset_server
+                );
+                if is_large {
+                    spawn_small_meteors(
+                        &mut commands,
+                        (laser_transform.translation.x, laser_transform.translation.y),
+                        &asset_server
+                    );
+                }
+            }
+        }
+    }
+}
+
+pub fn meteor_hit_player (
+    mut commands: Commands,
+    meteor_query: Query<(&Transform, &Meteor), With<Meteor>>,
+    player_query: Query<(&Transform, Entity), With<Player>>
+) {
+    for (player_transform, player_entity) in player_query.iter() {
+        for (meteor_transform, meteor) in meteor_query.iter() {
+            let is_large = meteor.size == MeteorSize::Large;
+            let meteor_size = if is_large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
+            // TODO: Fix measure distance
+            if player_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + PLAYER_HEIGHT / 2.0 {
+                commands.entity(player_entity).despawn();
             }
         }
     }

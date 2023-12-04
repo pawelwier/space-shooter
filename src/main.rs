@@ -1,13 +1,15 @@
 use bevy::{prelude::*, window::{PrimaryWindow, WindowResolution}};
+use explosion::systems::despawn_explosions_on_timeout;
 use object::meteor::{systems::{meteor_movement, spawn_meteors_over_time, tick_meteor_spawn_timer}, resources::MeteorSpawnTimer};
-use player::systems::{spawn_player, player_movement, shoot_laser, laser_movement, laser_hit_meteor};
+use player::systems::{spawn_player, player_movement, shoot_laser, laser_movement, laser_hit_meteor, meteor_hit_player};
 
 pub mod player;
 pub mod object;
+pub mod explosion;
 
 fn main() {
     App::new()
-    .   init_resource::<MeteorSpawnTimer>()
+        .init_resource::<MeteorSpawnTimer>()
         .add_plugins(DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -21,8 +23,8 @@ fn main() {
         )
         .add_systems(Startup, (spawn_camera, spawn_player))
         .add_systems(Update, (
-            tick_meteor_spawn_timer, player_movement, shoot_laser, 
-            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_meteor
+            tick_meteor_spawn_timer, player_movement, shoot_laser, meteor_hit_player,
+            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_meteor, despawn_explosions_on_timeout
         ))
         .run();
 }
