@@ -1,16 +1,38 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    window::PrimaryWindow
+};
 
 use crate::explosion::systems::spawn_explosion;
-use crate::object::MovingObject;
-use crate::object::enemy::ENEMY_SHIP_HEIGHT;
-use crate::object::enemy::components::Enemy;
-use crate::object::meteor::systems::spawn_small_meteors;
-use crate::object::meteor::{METEOR_LARGE_HEIGHT, METEOR_SMALL_HEIGHT};
-use crate::object::meteor::components::{Meteor, MeteorSize};
-
-use super::components::{Laser, Player, PlayerMovement};
-use super::{PLAYER_SPEED, PLAYER_WIDTH, PLAYER_HEIGHT, LASER_SPEED, LASER_HEIGHT};
-use super::helpers::{key_just_pressed, key_pressed, key_just_released};
+use crate::object::{
+    MovingObject,
+    enemy::components::Enemy,
+    meteor::{
+        systems::spawn_small_meteors,
+        components::{
+            Meteor,
+            MeteorSize
+        },
+    },
+    powerup::components::PowerUp
+};
+use super::components::{
+    Laser,
+    Player,
+    PlayerMovement
+};
+use super::{
+    PLAYER_SPEED,
+    PLAYER_WIDTH,
+    PLAYER_HEIGHT,
+    LASER_SPEED,
+    LASER_HEIGHT
+};
+use super::helpers::{
+    key_just_pressed,
+    key_pressed,
+    key_just_released
+};
 
 pub fn spawn_player(
     mut commands: Commands,
@@ -126,15 +148,13 @@ pub fn laser_movement(
 pub fn laser_hit_meteor(
     mut commands: Commands,
     mut laser_query: Query<(&Transform, Entity), With<Laser>>,
-    mut meteor_query: Query<(&Transform, &Meteor, Entity), With<Meteor>>,
+    mut meteor_query: Query<(&Transform, &Meteor, Entity, &MovingObject), With<Meteor>>,
     asset_server: Res<AssetServer>,
 ) {
     for (laser_transform, laser_entity) in laser_query.iter_mut() {
-        for (meteor_transform, meteor, meteor_entity) in meteor_query.iter_mut() {
-            let is_large = meteor.size == MeteorSize::Large;
-            let meteor_size = if is_large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
+        for (meteor_transform, meteor, meteor_entity, moving_object) in meteor_query.iter_mut() {
             // TODO: Fix measure distance
-            if laser_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + LASER_HEIGHT / 2.0 {
+            if laser_transform.translation.distance(meteor_transform.translation) < moving_object.size.1 / 2.0 + LASER_HEIGHT / 2.0 {
                 commands.entity(laser_entity).despawn();
                 commands.entity(meteor_entity).despawn();
                 spawn_explosion(
@@ -142,7 +162,7 @@ pub fn laser_hit_meteor(
                     (laser_transform.translation.x, laser_transform.translation.y),
                     &asset_server
                 );
-                if is_large {
+                if meteor.size == MeteorSize::Large {
                     spawn_small_meteors(
                         &mut commands,
                         (laser_transform.translation.x, laser_transform.translation.y),
@@ -154,70 +174,46 @@ pub fn laser_hit_meteor(
     }
 }
 
-fn meteor_hit_player(
+fn hit_player_damage(
     commands: &mut Commands,
-    meteor: &Meteor,
-    player_transform: &Transform,
-    meteor_transform: &Transform,
     player_entity: Entity
 ) {
-    let is_large = meteor.size == MeteorSize::Large;
-    let meteor_size = if is_large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
-    // TODO: Fix measure distance
-    if player_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + PLAYER_HEIGHT / 2.0 {
-        commands.entity(player_entity).despawn();
-        println!("Hit by Meteor");
-    }
-}
-
-fn enemy_hit_player(
-    commands: &mut Commands,
-    player_transform: &Transform,
-    enemy_transform: &Transform,
-    player_entity: Entity
-) {
-    // TODO: Fix measure distance
-    if player_transform.translation.distance(enemy_transform.translation) < ENEMY_SHIP_HEIGHT / 2.0 + PLAYER_HEIGHT / 2.0 {
-        commands.entity(player_entity).despawn();
-        println!("Hit by Enemy");
-    }
+    commands.entity(player_entity).despawn();
 }
 
 pub fn object_hit_player(
     mut commands: Commands,
-    object_query: Query<(&Transform, Option<&Meteor>, Option<&Enemy>), With<MovingObject>>,
+    object_query: Query<(&Transform, &MovingObject, Option<&Meteor>, Option<&Enemy>, Option<&PowerUp>), With<MovingObject>>,
     player_query: Query<(&Transform, Entity), With<Player>>
 ) {
     for (player_transform, player_entity) in player_query.iter() {
         for object in object_query.iter() {
-            let (transform, meteor_option, enemy_option) = object;
-
-            // TODO: Add Size component, move match to inside hit function
-
-            match meteor_option {
-                Some(meteor) => {
-                    meteor_hit_player(
+            let (
+                transform,
+                moving_object,
+                meteor_option,
+                enemy_option,
+                power_up_option
+            ) = object;
+            let distance = player_transform.translation.distance(transform.translation);
+            // TODO: get more precise distance using rects
+            if distance < (moving_object.size.0 + moving_object.size.1 / 2.0) / 2.0 + PLAYER_HEIGHT / 2.0 {
+                if meteor_option.is_some() || enemy_option.is_some() {
+                    hit_player_damage(
                         &mut commands,
-                        meteor,
-                        player_transform,
-                        transform,
                         player_entity
                     )
-                },
-                None => {}
+                }
+                if power_up_option.is_some() {
+                    match Some(power_up_option) {
+                        Some(power_up) => {
+                            println!("type: {:?}", power_up);
+                        },
+                        None => {}
+                    }
+                }
             }
 
-            match enemy_option {
-                Some(_) => {
-                    enemy_hit_player(
-                        &mut commands,
-                        player_transform,
-                        transform,
-                        player_entity
-                    )
-                },
-                None => {}
-            }
         }
     }
 }

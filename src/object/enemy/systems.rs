@@ -1,8 +1,20 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+    prelude::*, 
+    window::PrimaryWindow
+};
 
-use crate::object::{Object, MovingObject};
+use crate::object::{
+    SpawnedEntity,
+    MovingObject
+};
 
-use super::{components::Enemy, resources::EnemySpawnTimer};
+use super::{
+    components::Enemy, 
+    resources::EnemySpawnTimer, 
+    ENEMY_SHIP_SPEED,
+    ENEMY_SHIP_WIDTH,
+    ENEMY_SHIP_HEIGHT
+};
 
 pub fn spawn_enemy(
     mut commands: Commands,
@@ -10,9 +22,7 @@ pub fn spawn_enemy(
     asset_server: Res<AssetServer>
 ) {
     let window = window_query.get_single().unwrap();
-    let enemy = Enemy { 
-        direction: 0.0
-    };
+    let enemy = Enemy {};
 
     commands.spawn(
         (
@@ -27,7 +37,11 @@ pub fn spawn_enemy(
                 ..default()
             },
             enemy,
-            MovingObject {}
+            MovingObject {
+                speed: ENEMY_SHIP_SPEED,
+                direction: 0.0,
+                size: (ENEMY_SHIP_WIDTH, ENEMY_SHIP_HEIGHT)
+            }
         )
     );
 }
@@ -35,13 +49,13 @@ pub fn spawn_enemy(
 // TODO: add as shared fn among Objects
 pub fn enemy_movement(
     mut commands: Commands,
-    mut enemy_query: Query<(&mut Transform, Entity, &mut Enemy), With<Enemy>>,
+    mut enemy_query: Query<(&mut Transform, Entity, &MovingObject), With<Enemy>>,
     time: Res<Time>
 ) {
-    for (mut transform, entity, enemy) in enemy_query.iter_mut() {
+    for (mut transform, entity, object) in enemy_query.iter_mut() {
         // TODO: maybe random y
-        let direction = Vec3::new(enemy.direction, -1.0, 0.0);
-        transform.translation += direction * Enemy::speed(&enemy) * time.delta_seconds();
+        let direction = Vec3::new(object.direction, -1.0, 0.0);
+        transform.translation += direction * object.speed * time.delta_seconds();
 
         if transform.translation.y < 0.0 {
             commands.entity(entity).despawn();

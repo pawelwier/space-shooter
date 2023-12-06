@@ -1,8 +1,26 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+    prelude::*,
+    window::PrimaryWindow
+};
 
-use crate::object::{Object, MovingObject};
+use crate::object::{
+    SpawnedEntity,
+    MovingObject
+};
 
-use super::{components::{Meteor, MeteorSize}, resources::MeteorSpawnTimer};
+use super::{
+    components::{
+        Meteor,
+        MeteorSize
+    }, 
+    resources::MeteorSpawnTimer, 
+    METEOR_SMALL_SPEED, 
+    METEOR_LARGE_SPEED, 
+    METEOR_LARGE_WIDTH, 
+    METEOR_LARGE_HEIGHT, 
+    METEOR_SMALL_WIDTH, 
+    METEOR_SMALL_HEIGHT
+};
 
 pub fn spawn_meteor(
     mut commands: Commands,
@@ -11,8 +29,7 @@ pub fn spawn_meteor(
 ) {
     let window = window_query.get_single().unwrap();
     let meteor = Meteor { 
-        size: MeteorSize::Large,
-        direction: 0.0
+        size: MeteorSize::Large
     };
 
     commands.spawn(
@@ -23,7 +40,11 @@ pub fn spawn_meteor(
                 ..default()
             },
             meteor,
-            MovingObject {}
+            MovingObject {
+                speed: METEOR_LARGE_SPEED,
+                direction: 0.0,
+                size: (METEOR_LARGE_WIDTH, METEOR_LARGE_HEIGHT)
+            }
         )
     );
 }
@@ -31,13 +52,13 @@ pub fn spawn_meteor(
 // TODO: add as shared fn among Objects
 pub fn meteor_movement(
     mut commands: Commands,
-    mut meteor_query: Query<(&mut Transform, Entity, &mut Meteor), With<Meteor>>,
+    mut meteor_query: Query<(&mut Transform, Entity, &MovingObject), With<Meteor>>,
     time: Res<Time>
 ) {
-    for (mut transform, entity, meteor) in meteor_query.iter_mut() {
+    for (mut transform, entity, object) in meteor_query.iter_mut() {
         // TODO: maybe random y
-        let direction = Vec3::new(meteor.direction, -1.0, 0.0);
-        transform.translation += direction * Meteor::speed(&meteor) * time.delta_seconds();
+        let direction = Vec3::new(object.direction, -1.0, 0.0);
+        transform.translation += direction * object.speed * time.delta_seconds();
         transform.rotate_z(0.03);
 
         if transform.translation.y < 0.0 {
@@ -81,10 +102,13 @@ pub fn spawn_small_meteors(
                     ..default()
                 },
                 Meteor { 
-                    size: MeteorSize::Small,
-                    direction
+                    size: MeteorSize::Small
                 },
-                MovingObject {}
+                MovingObject {
+                    speed: METEOR_SMALL_SPEED,
+                    direction,
+                    size: (METEOR_SMALL_WIDTH, METEOR_SMALL_HEIGHT)
+                }
             )
         );
     }
