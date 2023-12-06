@@ -1,6 +1,9 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::explosion::systems::spawn_explosion;
+use crate::object::MovingObject;
+use crate::object::enemy::ENEMY_SHIP_HEIGHT;
+use crate::object::enemy::components::Enemy;
 use crate::object::meteor::systems::spawn_small_meteors;
 use crate::object::meteor::{METEOR_LARGE_HEIGHT, METEOR_SMALL_HEIGHT};
 use crate::object::meteor::components::{Meteor, MeteorSize};
@@ -151,18 +154,69 @@ pub fn laser_hit_meteor(
     }
 }
 
-pub fn meteor_hit_player (
+fn meteor_hit_player(
+    commands: &mut Commands,
+    meteor: &Meteor,
+    player_transform: &Transform,
+    meteor_transform: &Transform,
+    player_entity: Entity
+) {
+    let is_large = meteor.size == MeteorSize::Large;
+    let meteor_size = if is_large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
+    // TODO: Fix measure distance
+    if player_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + PLAYER_HEIGHT / 2.0 {
+        commands.entity(player_entity).despawn();
+        println!("Hit by Meteor");
+    }
+}
+
+fn enemy_hit_player(
+    commands: &mut Commands,
+    player_transform: &Transform,
+    enemy_transform: &Transform,
+    player_entity: Entity
+) {
+    // TODO: Fix measure distance
+    if player_transform.translation.distance(enemy_transform.translation) < ENEMY_SHIP_HEIGHT / 2.0 + PLAYER_HEIGHT / 2.0 {
+        commands.entity(player_entity).despawn();
+        println!("Hit by Enemy");
+    }
+}
+
+pub fn object_hit_player(
     mut commands: Commands,
-    meteor_query: Query<(&Transform, &Meteor), With<Meteor>>,
+    object_query: Query<(&Transform, Option<&Meteor>, Option<&Enemy>), With<MovingObject>>,
     player_query: Query<(&Transform, Entity), With<Player>>
 ) {
     for (player_transform, player_entity) in player_query.iter() {
-        for (meteor_transform, meteor) in meteor_query.iter() {
-            let is_large = meteor.size == MeteorSize::Large;
-            let meteor_size = if is_large { METEOR_LARGE_HEIGHT } else { METEOR_SMALL_HEIGHT };
-            // TODO: Fix measure distance
-            if player_transform.translation.distance(meteor_transform.translation) < meteor_size / 2.0 + PLAYER_HEIGHT / 2.0 {
-                commands.entity(player_entity).despawn();
+        for object in object_query.iter() {
+            let (transform, meteor_option, enemy_option) = object;
+
+            // TODO: Add Size component, move match to inside hit function
+
+            match meteor_option {
+                Some(meteor) => {
+                    meteor_hit_player(
+                        &mut commands,
+                        meteor,
+                        player_transform,
+                        transform,
+                        player_entity
+                    )
+                },
+                None => {}
+            }
+
+            match enemy_option {
+                Some(_) => {
+                    enemy_hit_player(
+                        &mut commands,
+                        player_transform,
+                        transform,
+                        player_entity
+                    )
+                },
+                None => {}
             }
         }
     }

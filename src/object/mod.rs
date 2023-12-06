@@ -1,6 +1,8 @@
+use bevy::ecs::component::Component;
 use rand::random;
 
 pub mod meteor;
+pub mod enemy;
 
 pub trait Object : Sized {
     fn speed(&self) -> f32;
@@ -10,3 +12,6 @@ pub trait Object : Sized {
         random::<f32>() * window_width
     }
 }
+
+#[derive(Component)]
+pub struct MovingObject {}

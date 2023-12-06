@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::object::Object;
+use crate::object::{Object, MovingObject};
 
 use super::{components::{Meteor, MeteorSize}, resources::MeteorSpawnTimer};
 
@@ -22,7 +22,8 @@ pub fn spawn_meteor(
                 texture: asset_server.load("sprites/meteor_big.png"),
                 ..default()
             },
-            meteor
+            meteor,
+            MovingObject {}
         )
     );
 }
@@ -82,7 +83,8 @@ pub fn spawn_small_meteors(
                 Meteor { 
                     size: MeteorSize::Small,
                     direction
-                }
+                },
+                MovingObject {}
             )
         );
     }

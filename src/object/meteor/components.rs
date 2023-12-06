@@ -10,7 +10,7 @@ pub enum MeteorSize {
     Small
 }
 
-#[derive(Component)]
+#[derive(Component, PartialEq)]
 pub struct Meteor {
     pub size: MeteorSize,
     pub direction: f32
