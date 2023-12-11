@@ -15,7 +15,7 @@ pub fn spawn_explosion(
             SpriteBundle {
                 transform: Transform::from_xyz(x, y, 0.0),
                 texture: asset_server.load("sprites/explosion.png"),
-                ..default()
+                ..Default::default()
             },
             Explosion {
                 timer: Timer::new(Duration::new(0, 400000000), TimerMode::Once)

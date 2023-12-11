@@ -37,7 +37,7 @@ pub fn spawn_meteor(
             SpriteBundle {
                 transform: Transform::from_xyz(Meteor::get_spawn_x(&meteor, window.width()), window.height(), 0.0),
                 texture: asset_server.load("sprites/meteor_big.png"),
-                ..default()
+                ..Default::default()
             },
             meteor,
             MovingObject {
@@ -99,7 +99,7 @@ pub fn spawn_small_meteors(
                 SpriteBundle {
                     transform: Transform::from_xyz(x, y, 0.0),
                     texture: asset_server.load("sprites/meteor_small.png"),
-                    ..default()
+                    ..Default::default()
                 },
                 Meteor { 
                     size: MeteorSize::Small

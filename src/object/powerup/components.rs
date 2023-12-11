@@ -20,20 +20,11 @@ pub struct PowerUp {
 
 impl SpawnedEntity for PowerUp {}
 
-pub fn get_power_up_details(power_up_type: &PowerUpType) -> &'static str {
+pub fn get_power_up_sprite_path(power_up_type: &PowerUpType) -> &'static str {
     match power_up_type {
-        PowerUpType::Bolt => {
-            println!("it's a bolt");
-            "sprites/power_up_bolt.png"
-        }
-        PowerUpType::Shield => {
-            println!("it's a shield");
-            "sprites/power_up_shield.png"
-        }
-        PowerUpType::Star => {
-            println!("it's a star");
-            "sprites/power_up_star.png"
-        }
+        PowerUpType::Bolt => { "sprites/power_up_bolt.png" }
+        PowerUpType::Shield => { "sprites/power_up_shield.png" }
+        PowerUpType::Star => { "sprites/power_up_star.png" }
     }
 }
 

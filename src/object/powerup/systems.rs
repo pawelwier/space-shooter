@@ -12,7 +12,7 @@ use super::{
     components::{
         PowerUp,
         PowerUpType,
-        get_power_up_details,
+        get_power_up_sprite_path,
         get_random_power_type
     }, 
     POWER_UP_SPEED,
@@ -28,7 +28,7 @@ pub fn spawn_power_up(
     power_type: PowerUpType
 ) {
     let window = window_query.get_single().unwrap();
-    let sprite_path = get_power_up_details(&power_type.clone());
+    let sprite_path = get_power_up_sprite_path(&power_type.clone());
     let power_up = PowerUp {
         power_type
     };
@@ -42,7 +42,7 @@ pub fn spawn_power_up(
                     ..Default::default()
                 },
                 texture: asset_server.load(sprite_path),
-                ..default()
+                ..Default::default()
             },
             power_up,
             MovingObject {

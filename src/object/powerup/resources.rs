@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-pub const POWER_UP_SPAWN_TIME: f32 = 5.0;
+pub const POWER_UP_SPAWN_TIME: f32 = 3.5;
 
 #[derive(Resource)]
 pub struct PowerUpSpawnTimer {

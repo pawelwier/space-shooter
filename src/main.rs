@@ -6,6 +6,10 @@ use bevy::{
     }
 };
 use explosion::systems::despawn_explosions_on_timeout;
+use game::{
+    resources::ScoreResource,
+    systems::spawn_score
+};
 use object::{
     meteor::{
         systems::{
@@ -44,12 +48,15 @@ use player::systems::{
 pub mod player;
 pub mod object;
 pub mod explosion;
+pub mod game;
 
 fn main() {
+    // TODO: turn into plugins
     App::new()
         .init_resource::<MeteorSpawnTimer>()
         .init_resource::<EnemySpawnTimer>()
         .init_resource::<PowerUpSpawnTimer>()
+        .init_resource::<ScoreResource>()
         .add_plugins(DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -61,12 +68,13 @@ fn main() {
                 ..Default::default()
             })
         )
-        .add_systems(Startup, (spawn_camera, spawn_player))
+        .add_systems(Startup, (spawn_camera, spawn_player, spawn_score))
         .add_systems(Update, (
             tick_meteor_spawn_timer, player_movement, shoot_laser, object_hit_player,
             tick_enemy_spawn_timer, spawn_enemies_over_time, enemy_movement,
             tick_power_up_spawn_timer, spawn_power_ups_over_time, power_up_movement,
-            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_meteor, despawn_explosions_on_timeout
+            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_meteor, despawn_explosions_on_timeout,
+            
         ))
         .run();
 }
@@ -80,7 +88,7 @@ pub fn spawn_camera(
     commands.spawn(
         Camera2dBundle {
             transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, 0.0),
-            ..default()
+            ..Default::default()
         }
     );
 }

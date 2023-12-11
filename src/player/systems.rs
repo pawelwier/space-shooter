@@ -4,6 +4,11 @@ use bevy::{
 };
 
 use crate::explosion::systems::spawn_explosion;
+use crate::game::systems::add_points_to_score;
+use crate::game::{
+    components::ScoreComponent,
+    resources::ScoreResource
+};
 use crate::object::{
     MovingObject,
     enemy::components::Enemy,
@@ -14,7 +19,10 @@ use crate::object::{
             MeteorSize
         },
     },
-    powerup::components::PowerUp
+    powerup::components::{
+        PowerUp,
+        PowerUpType
+    }
 };
 use super::components::{
     Laser,
@@ -46,7 +54,7 @@ pub fn spawn_player(
             SpriteBundle {
                 transform: Transform::from_xyz(window.width() / 2.0, PLAYER_HEIGHT, 0.0),
                 texture: asset_server.load("sprites/player_orange.png"),
-                ..default()
+                ..Default::default()
             },
             Player {
                 movement: PlayerMovement::None
@@ -118,7 +126,7 @@ pub fn shoot_laser(
                     SpriteBundle {
                         transform: Transform::from_xyz(x, PLAYER_HEIGHT * 2.0, 0.0),
                         texture: asset_server.load("sprites/laser_green.png"),
-                        ..default()
+                        ..Default::default()
                     },
                     Laser {}
                 )
@@ -150,6 +158,8 @@ pub fn laser_hit_meteor(
     mut laser_query: Query<(&Transform, Entity), With<Laser>>,
     mut meteor_query: Query<(&Transform, &Meteor, Entity, &MovingObject), With<Meteor>>,
     asset_server: Res<AssetServer>,
+    mut score_resource: ResMut<ScoreResource>,
+    mut score_query: Query<&mut Text, With<ScoreComponent>>,
 ) {
     for (laser_transform, laser_entity) in laser_query.iter_mut() {
         for (meteor_transform, meteor, meteor_entity, moving_object) in meteor_query.iter_mut() {
@@ -157,12 +167,18 @@ pub fn laser_hit_meteor(
             if laser_transform.translation.distance(meteor_transform.translation) < moving_object.size.1 / 2.0 + LASER_HEIGHT / 2.0 {
                 commands.entity(laser_entity).despawn();
                 commands.entity(meteor_entity).despawn();
+                
                 spawn_explosion(
                     &mut commands,
                     (laser_transform.translation.x, laser_transform.translation.y),
                     &asset_server
                 );
-                if meteor.size == MeteorSize::Large {
+
+                let is_large = meteor.size == MeteorSize::Large;
+                let score = if is_large { 10.0 } else { 30.0 };
+                add_points_to_score(score, &mut score_resource, &mut score_query);
+
+                if is_large {
                     spawn_small_meteors(
                         &mut commands,
                         (laser_transform.translation.x, laser_transform.translation.y),
@@ -183,19 +199,24 @@ fn hit_player_damage(
 
 pub fn object_hit_player(
     mut commands: Commands,
-    object_query: Query<(&Transform, &MovingObject, Option<&Meteor>, Option<&Enemy>, Option<&PowerUp>), With<MovingObject>>,
-    player_query: Query<(&Transform, Entity), With<Player>>
+    object_query: Query<(
+        Entity, &Transform, &MovingObject, Option<&Meteor>, Option<&Enemy>, Option<&PowerUp>
+    ), With<MovingObject>>,
+    player_query: Query<(&Transform, Entity), With<Player>>,
+    mut score_resource: ResMut<ScoreResource>,
+    mut score_query: Query<&mut Text, With<ScoreComponent>>,
 ) {
     for (player_transform, player_entity) in player_query.iter() {
         for object in object_query.iter() {
             let (
-                transform,
+                object_entity,
+                object_transform,
                 moving_object,
                 meteor_option,
                 enemy_option,
                 power_up_option
             ) = object;
-            let distance = player_transform.translation.distance(transform.translation);
+            let distance = player_transform.translation.distance(object_transform.translation);
             // TODO: get more precise distance using rects
             if distance < (moving_object.size.0 + moving_object.size.1 / 2.0) / 2.0 + PLAYER_HEIGHT / 2.0 {
                 if meteor_option.is_some() || enemy_option.is_some() {
@@ -205,9 +226,26 @@ pub fn object_hit_player(
                     )
                 }
                 if power_up_option.is_some() {
+                    commands.entity(object_entity).despawn();
+
                     match Some(power_up_option) {
                         Some(power_up) => {
-                            println!("type: {:?}", power_up);
+                            let power_type = &power_up.unwrap().power_type;
+                            let score: f32;
+
+                            match power_type {
+                                // TODO: Add special powers
+                                PowerUpType::Bolt => {
+                                   score = 10.0;
+                                }
+                                PowerUpType::Shield => {
+                                    score = 25.0;
+                                }
+                                PowerUpType::Star => {
+                                    score = 40.0;
+                                }
+                            }
+                            add_points_to_score(score, &mut score_resource, &mut score_query);
                         },
                         None => {}
                     }

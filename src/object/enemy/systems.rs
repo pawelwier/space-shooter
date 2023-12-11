@@ -34,7 +34,7 @@ pub fn spawn_enemy(
                     ..Default::default()
                 },
                 texture: asset_server.load("sprites/enemy_ship_red.png"),
-                ..default()
+                ..Default::default()
             },
             enemy,
             MovingObject {
