@@ -9,6 +9,11 @@ use crate::game::{
     components::ScoreComponent,
     resources::ScoreResource
 };
+use crate::object::enemy::ENEMY_SHIP_POINTS;
+use crate::object::meteor::{
+    METEOR_LARGE_POINTS,
+    METEOR_SMALL_POINTS
+};
 use crate::object::{
     MovingObject,
     enemy::components::Enemy,
@@ -154,37 +159,49 @@ pub fn laser_movement(
     } 
 }
 
-pub fn laser_hit_meteor(
+pub fn laser_hit_object(
     mut commands: Commands,
     mut laser_query: Query<(&Transform, Entity), With<Laser>>,
-    mut meteor_query: Query<(&Transform, &Meteor, Entity, &MovingObject), With<Meteor>>,
+    mut meteor_query: Query<(&Transform, Option<&Meteor>, Option<&Enemy>, Entity, &MovingObject), (With<MovingObject>, Without<PowerUp>)>,
     asset_server: Res<AssetServer>,
     mut score_resource: ResMut<ScoreResource>,
     mut score_query: Query<&mut Text, With<ScoreComponent>>,
 ) {
     for (laser_transform, laser_entity) in laser_query.iter_mut() {
-        for (meteor_transform, meteor, meteor_entity, moving_object) in meteor_query.iter_mut() {
+        for (meteor_transform, meteor_option, enemy_option, object_entity, moving_object) in meteor_query.iter_mut() {
             // TODO: Fix measure distance
             if laser_transform.translation.distance(meteor_transform.translation) < moving_object.size.1 / 2.0 + LASER_HEIGHT / 2.0 {
                 commands.entity(laser_entity).despawn();
-                commands.entity(meteor_entity).despawn();
+                commands.entity(object_entity).despawn();
                 
                 spawn_explosion(
                     &mut commands,
                     (laser_transform.translation.x, laser_transform.translation.y),
                     &asset_server
                 );
+                
+                // TODO: refactor Some, match, is_some()
+                if meteor_option.is_some() {
+                    match Some(meteor_option) {
+                        Some(meteor) => {
+                            let is_large = meteor.unwrap().size == MeteorSize::Large;
+                            let score = if is_large { METEOR_LARGE_POINTS } else { METEOR_SMALL_POINTS };
+                            add_points_to_score(score, &mut score_resource, &mut score_query);
+        
+                            if is_large {
+                                spawn_small_meteors(
+                                    &mut commands,
+                                    (laser_transform.translation.x, laser_transform.translation.y),
+                                    &asset_server
+                                );
+                            }
+                        }
+                        None => {}
+                    }   
+                }
 
-                let is_large = meteor.size == MeteorSize::Large;
-                let score = if is_large { 10.0 } else { 30.0 };
-                add_points_to_score(score, &mut score_resource, &mut score_query);
-
-                if is_large {
-                    spawn_small_meteors(
-                        &mut commands,
-                        (laser_transform.translation.x, laser_transform.translation.y),
-                        &asset_server
-                    );
+                if enemy_option.is_some() {
+                    add_points_to_score(ENEMY_SHIP_POINTS, &mut score_resource, &mut score_query);
                 }
             }
         }
@@ -240,6 +257,8 @@ pub fn object_hit_player(
             ) = object;
             let distance = player_transform.translation.distance(object_transform.translation);
             // TODO: get more precise distance using rects
+
+            // TODO: refactor Some, match, is_some()
             if distance < (object.size.0 + object.size.1 / 2.0) / 2.0 + PLAYER_HEIGHT / 2.0 {
                 if meteor_option.is_some() || enemy_option.is_some() {
                     /* 

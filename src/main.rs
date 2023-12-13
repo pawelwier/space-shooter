@@ -44,7 +44,7 @@ use player::{systems::{
     player_movement,
     shoot_laser,
     laser_movement,
-    laser_hit_meteor,
+    laser_hit_object,
     object_hit_player
 }, resources::PlayerParams};
 
@@ -77,7 +77,7 @@ fn main() {
             tick_meteor_spawn_timer, player_movement, shoot_laser, object_hit_player,
             tick_enemy_spawn_timer, spawn_enemies_over_time, enemy_movement,
             tick_power_up_spawn_timer, spawn_power_ups_over_time, power_up_movement,
-            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_meteor, despawn_explosions_on_timeout,
+            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_object, despawn_explosions_on_timeout,
             spawn_health_bar
         ))
         .run();
