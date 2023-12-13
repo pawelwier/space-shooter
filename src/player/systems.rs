@@ -193,13 +193,20 @@ pub fn laser_hit_meteor(
 
 fn hit_player_damage(
     commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
     player_entity: Entity,
     health_resource: &mut ResMut<PlayerParams>,
-    object: &MovingObject
+    damage: f32,
+    location: (f32, f32)
 ) {
-    health_resource.health -= object.damage; // TODO: make value dependant on object type
+    health_resource.health -= damage; // TODO: make value dependant on object type
     if health_resource.health <= 0.0 {
         despawn_player(commands, player_entity);
+        spawn_explosion(
+            commands,
+            (location.0, location.1),
+            &asset_server
+        );
     }
 }
 
@@ -212,6 +219,7 @@ fn despawn_player(
 
 pub fn object_hit_player(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     object_query: Query<(
         Entity, &Transform, &MovingObject, Option<&Meteor>, Option<&Enemy>, Option<&PowerUp>
     ), With<MovingObject>>,
@@ -241,9 +249,11 @@ pub fn object_hit_player(
                     commands.entity(object_entity).despawn();
                     hit_player_damage(
                         &mut commands,
+                        &asset_server,
                         player_entity,
                         &mut player_params,
-                        object
+                        object.damage,
+                        (player_transform.translation.x, player_transform.translation.y)
                     )
                 }
                 if power_up_option.is_some() {
