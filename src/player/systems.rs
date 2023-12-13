@@ -29,6 +29,7 @@ use super::components::{
     Player,
     PlayerMovement
 };
+use super::resources::PlayerParams;
 use super::{
     PLAYER_SPEED,
     PLAYER_WIDTH,
@@ -192,6 +193,18 @@ pub fn laser_hit_meteor(
 
 fn hit_player_damage(
     commands: &mut Commands,
+    player_entity: Entity,
+    health_resource: &mut ResMut<PlayerParams>,
+    object: &MovingObject
+) {
+    health_resource.health -= object.damage; // TODO: make value dependant on object type
+    if health_resource.health <= 0.0 {
+        despawn_player(commands, player_entity);
+    }
+}
+
+fn despawn_player(
+    commands: &mut Commands,
     player_entity: Entity
 ) {
     commands.entity(player_entity).despawn();
@@ -205,24 +218,32 @@ pub fn object_hit_player(
     player_query: Query<(&Transform, Entity), With<Player>>,
     mut score_resource: ResMut<ScoreResource>,
     mut score_query: Query<&mut Text, With<ScoreComponent>>,
+    mut player_params: ResMut<PlayerParams>,
 ) {
     for (player_transform, player_entity) in player_query.iter() {
         for object in object_query.iter() {
             let (
                 object_entity,
                 object_transform,
-                moving_object,
+                object,
                 meteor_option,
                 enemy_option,
                 power_up_option
             ) = object;
             let distance = player_transform.translation.distance(object_transform.translation);
             // TODO: get more precise distance using rects
-            if distance < (moving_object.size.0 + moving_object.size.1 / 2.0) / 2.0 + PLAYER_HEIGHT / 2.0 {
+            if distance < (object.size.0 + object.size.1 / 2.0) / 2.0 + PLAYER_HEIGHT / 2.0 {
                 if meteor_option.is_some() || enemy_option.is_some() {
+                    /* 
+                        TODO: leave for all types
+                            for power ups may result in gaining hp
+                    */
+                    commands.entity(object_entity).despawn();
                     hit_player_damage(
                         &mut commands,
-                        player_entity
+                        player_entity,
+                        &mut player_params,
+                        object
                     )
                 }
                 if power_up_option.is_some() {

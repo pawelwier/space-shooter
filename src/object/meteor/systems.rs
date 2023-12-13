@@ -19,7 +19,7 @@ use super::{
     METEOR_LARGE_WIDTH, 
     METEOR_LARGE_HEIGHT, 
     METEOR_SMALL_WIDTH, 
-    METEOR_SMALL_HEIGHT
+    METEOR_SMALL_HEIGHT, METEOR_LARGE_DAMAGE, METEOR_SMALL_DAMAGE
 };
 
 pub fn spawn_meteor(
@@ -43,7 +43,8 @@ pub fn spawn_meteor(
             MovingObject {
                 speed: METEOR_LARGE_SPEED,
                 direction: 0.0,
-                size: (METEOR_LARGE_WIDTH, METEOR_LARGE_HEIGHT)
+                size: (METEOR_LARGE_WIDTH, METEOR_LARGE_HEIGHT),
+                damage: METEOR_LARGE_DAMAGE
             }
         )
     );
@@ -107,7 +108,8 @@ pub fn spawn_small_meteors(
                 MovingObject {
                     speed: METEOR_SMALL_SPEED,
                     direction,
-                    size: (METEOR_SMALL_WIDTH, METEOR_SMALL_HEIGHT)
+                    size: (METEOR_SMALL_WIDTH, METEOR_SMALL_HEIGHT),
+                    damage: METEOR_SMALL_DAMAGE
                 }
             )
         );

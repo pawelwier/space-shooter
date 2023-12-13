@@ -48,7 +48,8 @@ pub fn spawn_power_up(
             MovingObject {
                 speed: POWER_UP_SPEED,
                 direction: 0.0,
-                size: (POWER_UP_WIDTH, POWER_UP_HEIGHT)
+                size: (POWER_UP_WIDTH, POWER_UP_HEIGHT),
+                damage: 0.0 // TODO: gain hps when colliding with some power ups?
             }
         )
     );

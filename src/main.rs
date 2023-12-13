@@ -8,7 +8,10 @@ use bevy::{
 use explosion::systems::despawn_explosions_on_timeout;
 use game::{
     resources::ScoreResource,
-    systems::spawn_score
+    systems::{
+        spawn_score,
+        spawn_health_bar
+    }
 };
 use object::{
     meteor::{
@@ -36,14 +39,14 @@ use object::{
         }
     }
 };
-use player::systems::{
+use player::{systems::{
     spawn_player,
     player_movement,
     shoot_laser,
     laser_movement,
     laser_hit_meteor,
     object_hit_player
-};
+}, resources::PlayerParams};
 
 pub mod player;
 pub mod object;
@@ -57,6 +60,7 @@ fn main() {
         .init_resource::<EnemySpawnTimer>()
         .init_resource::<PowerUpSpawnTimer>()
         .init_resource::<ScoreResource>()
+        .init_resource::<PlayerParams>()
         .add_plugins(DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -74,7 +78,7 @@ fn main() {
             tick_enemy_spawn_timer, spawn_enemies_over_time, enemy_movement,
             tick_power_up_spawn_timer, spawn_power_ups_over_time, power_up_movement,
             laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_meteor, despawn_explosions_on_timeout,
-            
+            spawn_health_bar
         ))
         .run();
 }
