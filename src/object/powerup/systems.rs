@@ -18,6 +18,7 @@ use super::{
     POWER_UP_SPEED,
     POWER_UP_WIDTH,
     POWER_UP_HEIGHT,
+    POWER_UP_STAR_HPS,
     resources::PowerUpSpawnTimer
 };
 
@@ -28,10 +29,11 @@ pub fn spawn_power_up(
     power_type: PowerUpType
 ) {
     let window = window_query.get_single().unwrap();
-    let sprite_path = get_power_up_sprite_path(&power_type.clone());
+    let sprite_path = get_power_up_sprite_path(&power_type);
     let power_up = PowerUp {
         power_type
     };
+    let hps = if power_up.power_type == PowerUpType::Star { POWER_UP_STAR_HPS } else { 0.0 };
 
     commands.spawn(
         (
@@ -49,7 +51,7 @@ pub fn spawn_power_up(
                 speed: POWER_UP_SPEED,
                 direction: 0.0,
                 size: (POWER_UP_WIDTH, POWER_UP_HEIGHT),
-                damage: 0.0 // TODO: gain hps when colliding with some power ups?
+                hps
             }
         )
     );

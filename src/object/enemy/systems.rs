@@ -41,7 +41,7 @@ pub fn spawn_enemy(
                 speed: ENEMY_SHIP_SPEED,
                 direction: 0.0,
                 size: (ENEMY_SHIP_WIDTH, ENEMY_SHIP_HEIGHT),
-                damage: ENEMY_SHIP_DAMAGE
+                hps: ENEMY_SHIP_DAMAGE
             }
         )
     );

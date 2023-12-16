@@ -16,5 +16,5 @@ pub struct MovingObject {
     pub speed: f32,
     pub direction: f32,
     pub size: (f32, f32),
-    pub damage: f32
+    pub hps: f32
 }

@@ -44,7 +44,7 @@ pub fn spawn_meteor(
                 speed: METEOR_LARGE_SPEED,
                 direction: 0.0,
                 size: (METEOR_LARGE_WIDTH, METEOR_LARGE_HEIGHT),
-                damage: METEOR_LARGE_DAMAGE
+                hps: METEOR_LARGE_DAMAGE
             }
         )
     );
@@ -109,7 +109,7 @@ pub fn spawn_small_meteors(
                     speed: METEOR_SMALL_SPEED,
                     direction,
                     size: (METEOR_SMALL_WIDTH, METEOR_SMALL_HEIGHT),
-                    damage: METEOR_SMALL_DAMAGE
+                    hps: METEOR_SMALL_DAMAGE
                 }
             )
         );

@@ -213,10 +213,11 @@ fn hit_player_damage(
     asset_server: &Res<AssetServer>,
     player_entity: Entity,
     health_resource: &mut ResMut<PlayerParams>,
-    damage: f32,
+    hps: f32,
     location: (f32, f32)
 ) {
-    health_resource.health -= damage; // TODO: make value dependant on object type
+    let is_max = (health_resource.health + hps) >= 100.0;
+    health_resource.health += if is_max { 100.0 - health_resource.health } else { hps };
     if health_resource.health <= 0.0 {
         despawn_player(commands, player_entity);
         spawn_explosion(
@@ -238,7 +239,7 @@ pub fn object_hit_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     object_query: Query<(
-        Entity, &Transform, &MovingObject, Option<&Meteor>, Option<&Enemy>, Option<&PowerUp>
+        Entity, &Transform, &MovingObject, Option<&PowerUp>
     ), With<MovingObject>>,
     player_query: Query<(&Transform, Entity), With<Player>>,
     mut score_resource: ResMut<ScoreResource>,
@@ -251,8 +252,6 @@ pub fn object_hit_player(
                 object_entity,
                 object_transform,
                 object,
-                meteor_option,
-                enemy_option,
                 power_up_option
             ) = object;
             let distance = player_transform.translation.distance(object_transform.translation);
@@ -260,24 +259,17 @@ pub fn object_hit_player(
 
             // TODO: refactor Some, match, is_some()
             if distance < (object.size.0 + object.size.1 / 2.0) / 2.0 + PLAYER_HEIGHT / 2.0 {
-                if meteor_option.is_some() || enemy_option.is_some() {
-                    /* 
-                        TODO: leave for all types
-                            for power ups may result in gaining hp
-                    */
-                    commands.entity(object_entity).despawn();
-                    hit_player_damage(
-                        &mut commands,
-                        &asset_server,
-                        player_entity,
-                        &mut player_params,
-                        object.damage,
-                        (player_transform.translation.x, player_transform.translation.y)
-                    )
-                }
-                if power_up_option.is_some() {
-                    commands.entity(object_entity).despawn();
+                commands.entity(object_entity).despawn();
+                hit_player_damage(
+                    &mut commands,
+                    &asset_server,
+                    player_entity,
+                    &mut player_params,
+                    object.hps,
+                    (player_transform.translation.x, player_transform.translation.y)
+                );
 
+                if power_up_option.is_some() {
                     match Some(power_up_option) {
                         Some(power_up) => {
                             let power_type = &power_up.unwrap().power_type;
