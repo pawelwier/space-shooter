@@ -3,9 +3,12 @@ use bevy::{
     window::PrimaryWindow
 };
 
-use crate::object::{
-    SpawnedEntity,
-    MovingObject
+use crate::{
+    object::{
+        SpawnedEntity,
+        MovingObject
+    }, 
+    player::resources::PlayerParams
 };
 
 use super::{
@@ -90,4 +93,11 @@ pub fn spawn_power_ups_over_time(
     if power_up_spawn_timer.timer.finished() {
         spawn_power_up(commands, window_query, asset_server, get_random_power_type());
     }
+}
+
+pub fn toggle_can_flash(
+    params: &mut ResMut<PlayerParams>,
+    value: bool
+) {
+    params.can_flash = value;
 }

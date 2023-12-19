@@ -1,10 +1,11 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::player::resources::PlayerParams;
 
 use super::{
-    components::ScoreComponent, 
-    resources::ScoreResource
+    resources::ScoreResource, 
+    events::{HealthChange, Flash},
+    components::{ScoreComponent, FlashComponent}
 };
 
 fn draw_score_text(
@@ -63,23 +64,34 @@ pub fn spawn_score(
     );
 }
 
-// pub fn spawn_health_bar_init(
-//     mut commands: Commands
-// ) {
-//     spawn_health_bar(&mut commands, 60.0); // TODO: -> 100.0
-// }
+pub fn spawn_health_bar_init(
+    mut commands: Commands
+) {
+    spawn_health_bar(&mut commands, 100.0);
+}
 
-
-pub fn spawn_health_bar(
+pub fn update_health(
     mut commands: Commands,
+    mut health_change_event_reader: EventReader<HealthChange>,
     health_resource: ResMut<PlayerParams>
 ) {
-    let health = health_resource.health;
+    for _ in health_change_event_reader.read() {
+        spawn_health_bar(
+            &mut commands,
+            health_resource.health,
+        )
+    }
+}
+
+pub fn spawn_health_bar(
+    commands: &mut Commands,
+    health: f32,
+) {
     let health_bar_width_px = 300.0;
     let hp_width_px = health_bar_width_px / 100.0;
     let health_left_px = hp_width_px * health;
 
-    commands.spawn((
+    commands.spawn(
         NodeBundle {
             style: Style {
                 left: Val::Px(690.0),
@@ -90,8 +102,9 @@ pub fn spawn_health_bar(
             },
             background_color: Color::rgb(0.15, 0.15, 0.15).into(),
             ..Default::default()
-        },
-    )).with_children(
+        }
+    ).clear_children()
+    .with_children(
         |parent| {
             parent.spawn(
                 NodeBundle {
@@ -108,4 +121,41 @@ pub fn spawn_health_bar(
             );
         }
     );
+}
+
+pub fn spawn_flash_icon(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut flash_event_reader: EventReader<Flash>,
+    flash_query: Query<Entity, With<FlashComponent>>,
+    window_query: Query<&Window, With<PrimaryWindow>>
+) {
+    let window = window_query.get_single().unwrap();
+
+    for event in flash_event_reader.read() {
+        if event.display {
+            commands.spawn(
+                (
+                    SpriteBundle {
+                        transform: Transform { 
+                            translation: Vec3::new(
+                                window.width() - 30.0,
+                                window.height() - 100.0,
+                                0.0
+                            ), 
+                            scale: Vec3::new(1.5, 1.5, 0.0),
+                            ..Default::default()
+                        },
+                        texture: asset_server.load("sprites/bolt_gold.png"),
+                        ..Default::default()
+                    },
+                    FlashComponent {}
+                )
+            );
+        } else {
+            for entity in flash_query.iter() {                
+                commands.entity(entity).despawn();
+            }
+        }
+    }
 }

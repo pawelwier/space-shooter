@@ -10,7 +10,13 @@ use game::{
     resources::ScoreResource,
     systems::{
         spawn_score,
-        spawn_health_bar
+        update_health, 
+        spawn_health_bar_init, 
+        spawn_flash_icon
+    }, 
+    events::{
+        HealthChange,
+        Flash
     }
 };
 use object::{
@@ -39,14 +45,17 @@ use object::{
         }
     }
 };
-use player::{systems::{
-    spawn_player,
-    player_movement,
-    shoot_laser,
-    laser_movement,
-    laser_hit_object,
-    object_hit_player
-}, resources::PlayerParams};
+use player::{
+    systems::{
+        spawn_player,
+        player_movement,
+        shoot_laser,
+        laser_movement,
+        laser_hit_object,
+        object_hit_player, flash
+    }, 
+    resources::PlayerParams
+};
 
 pub mod player;
 pub mod object;
@@ -61,6 +70,8 @@ fn main() {
         .init_resource::<PowerUpSpawnTimer>()
         .init_resource::<ScoreResource>()
         .init_resource::<PlayerParams>()
+        .add_event::<HealthChange>()
+        .add_event::<Flash>()
         .add_plugins(DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -72,13 +83,15 @@ fn main() {
                 ..Default::default()
             })
         )
-        .add_systems(Startup, (spawn_camera, spawn_player, spawn_score))
+        .add_systems(Startup, (
+            spawn_camera, spawn_player, spawn_score, spawn_health_bar_init
+        ))
         .add_systems(Update, (
             tick_meteor_spawn_timer, player_movement, shoot_laser, object_hit_player,
             tick_enemy_spawn_timer, spawn_enemies_over_time, enemy_movement,
             tick_power_up_spawn_timer, spawn_power_ups_over_time, power_up_movement,
             laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_object, despawn_explosions_on_timeout,
-            spawn_health_bar
+            update_health, flash, spawn_flash_icon
         ))
         .run();
 }

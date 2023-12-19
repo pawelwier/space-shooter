@@ -4,6 +4,7 @@ use bevy::{
 };
 
 use crate::explosion::systems::spawn_explosion;
+use crate::game::events::{HealthChange, Flash};
 use crate::game::systems::add_points_to_score;
 use crate::game::{
     components::ScoreComponent,
@@ -14,6 +15,7 @@ use crate::object::meteor::{
     METEOR_LARGE_POINTS,
     METEOR_SMALL_POINTS
 };
+use crate::object::powerup::systems::toggle_can_flash;
 use crate::object::{
     MovingObject,
     enemy::components::Enemy,
@@ -159,16 +161,43 @@ pub fn laser_movement(
     } 
 }
 
+pub fn flash(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut object_query: Query<(&Transform, Entity), (With<MovingObject>, Without<PowerUp>)>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut params: ResMut<PlayerParams>,
+    mut flash_event_writer: EventWriter<Flash>
+) {
+    if key_just_pressed(&keyboard_input, KeyCode::ControlLeft) && params.can_flash {
+        toggle_can_flash(&mut params, false);
+
+        flash_event_writer.send(Flash { display: false });
+
+        for (transform, entity) in object_query.iter_mut() {
+            commands.entity(entity).despawn();
+
+            spawn_explosion(
+                &mut commands,
+                (transform.translation.x, transform.translation.y),
+                &asset_server
+            );
+        }
+    }
+}
+
 pub fn laser_hit_object(
     mut commands: Commands,
     mut laser_query: Query<(&Transform, Entity), With<Laser>>,
-    mut meteor_query: Query<(&Transform, Option<&Meteor>, Option<&Enemy>, Entity, &MovingObject), (With<MovingObject>, Without<PowerUp>)>,
+    mut object_query: Query<(
+        &Transform, Option<&Meteor>, Option<&Enemy>, Entity, &MovingObject
+    ), (With<MovingObject>, Without<PowerUp>)>,
     asset_server: Res<AssetServer>,
     mut score_resource: ResMut<ScoreResource>,
     mut score_query: Query<&mut Text, With<ScoreComponent>>,
 ) {
     for (laser_transform, laser_entity) in laser_query.iter_mut() {
-        for (meteor_transform, meteor_option, enemy_option, object_entity, moving_object) in meteor_query.iter_mut() {
+        for (meteor_transform, meteor_option, enemy_option, object_entity, moving_object) in object_query.iter_mut() {
             // TODO: Fix measure distance
             if laser_transform.translation.distance(meteor_transform.translation) < moving_object.size.1 / 2.0 + LASER_HEIGHT / 2.0 {
                 commands.entity(laser_entity).despawn();
@@ -214,10 +243,13 @@ fn hit_player_damage(
     player_entity: Entity,
     health_resource: &mut ResMut<PlayerParams>,
     hps: f32,
-    location: (f32, f32)
+    location: (f32, f32),
+    health_change_event_writer: &mut EventWriter<HealthChange>,
 ) {
     let is_max = (health_resource.health + hps) >= 100.0;
     health_resource.health += if is_max { 100.0 - health_resource.health } else { hps };
+
+    health_change_event_writer.send(HealthChange {});
     if health_resource.health <= 0.0 {
         despawn_player(commands, player_entity);
         spawn_explosion(
@@ -245,6 +277,8 @@ pub fn object_hit_player(
     mut score_resource: ResMut<ScoreResource>,
     mut score_query: Query<&mut Text, With<ScoreComponent>>,
     mut player_params: ResMut<PlayerParams>,
+    mut health_change_event_writer: EventWriter<HealthChange>,
+    mut flash_event_writer: EventWriter<Flash>
 ) {
     for (player_transform, player_entity) in player_query.iter() {
         for object in object_query.iter() {
@@ -266,7 +300,8 @@ pub fn object_hit_player(
                     player_entity,
                     &mut player_params,
                     object.hps,
-                    (player_transform.translation.x, player_transform.translation.y)
+                    (player_transform.translation.x, player_transform.translation.y),
+                    &mut health_change_event_writer
                 );
 
                 if power_up_option.is_some() {
@@ -278,7 +313,10 @@ pub fn object_hit_player(
                             match power_type {
                                 // TODO: Add special powers
                                 PowerUpType::Bolt => {
-                                   score = 10.0;
+                                    toggle_can_flash(&mut player_params, true);
+                                    flash_event_writer.send(Flash { display: true });
+
+                                    score = 10.0;
                                 }
                                 PowerUpType::Shield => {
                                     score = 25.0;
