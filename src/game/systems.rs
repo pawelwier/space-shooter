@@ -94,7 +94,7 @@ pub fn spawn_health_bar(
     commands.spawn(
         NodeBundle {
             style: Style {
-                left: Val::Px(690.0),
+                left: Val::Px(490.0),
                 top: Val::Px(10.0),
                 width: Val::Px(300.0),
                 height: Val::Px(50.0),

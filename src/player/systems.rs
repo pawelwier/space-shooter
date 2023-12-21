@@ -96,18 +96,16 @@ pub fn player_movement(
         let window = window_query.get_single().unwrap();
 
         let mut direction = Vec3::ZERO;
+        // TODO: keep y for vertical movement
         let (mut x, /*mut*/ y) = (0.0, 0.0);
 
-        // TODO: keep y for vertical movement
+        let border_left = transform.translation.x <= (PLAYER_WIDTH / 2.0);
+        let border_right = transform.translation.x >= window.width() - PLAYER_WIDTH / 2.0;
 
-        if key_pressed(&keyboard_input, KeyCode::Left) { x = -1.0; }
-        if key_pressed(&keyboard_input, KeyCode::Right) { x = 1.0; }
+        if key_pressed(&keyboard_input, KeyCode::Left) && !border_left { x = -1.0; }
+        if key_pressed(&keyboard_input, KeyCode::Right) && !border_right { x = 1.0; }
         // if key_pressed(&keyboard_input, KeyCode::Up) { y = 1.0; }
         // if key_pressed(&keyboard_input, KeyCode::Down) { y = -1.0; }
-
-        let border_left = transform.translation.x <= (PLAYER_WIDTH / 2.0) && x == -1.0;
-        let border_right = transform.translation.x >= window.width() - PLAYER_WIDTH / 2.0 && x == 1.0;
-        if  border_left || border_right { return; }
 
         if x != 0.0 || y != 0.0 {
             direction += Vec3::new(x, y, 0.0);

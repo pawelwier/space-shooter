@@ -77,7 +77,7 @@ fn main() {
                 primary_window: Some(Window {
                     title: "SPACE SHOOTER".to_string(),
                     resizable: false,
-                    resolution: WindowResolution::new(1000.0, 1000.0),
+                    resolution: WindowResolution::new(800.0, 800.0),
                     ..Default::default()
                 }),
                 ..Default::default()
