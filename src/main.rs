@@ -32,9 +32,12 @@ use object::{
         systems::{
             tick_enemy_spawn_timer,
             spawn_enemies_over_time,
-            enemy_movement
+            enemy_movement, shoot_enemy_laser, enemy_laser_movement
         }, 
-        resources::EnemySpawnTimer
+        resources::{
+            EnemySpawnTimer,
+            EnemyLaserTimers
+        }
     }, 
     powerup::{
         resources::PowerUpSpawnTimer, 
@@ -70,6 +73,7 @@ fn main() {
         .init_resource::<PowerUpSpawnTimer>()
         .init_resource::<ScoreResource>()
         .init_resource::<PlayerParams>()
+        .init_resource::<EnemyLaserTimers>()
         .add_event::<HealthChange>()
         .add_event::<Flash>()
         .add_plugins(DefaultPlugins
@@ -90,8 +94,9 @@ fn main() {
             tick_meteor_spawn_timer, player_movement, shoot_laser, object_hit_player,
             tick_enemy_spawn_timer, spawn_enemies_over_time, enemy_movement,
             tick_power_up_spawn_timer, spawn_power_ups_over_time, power_up_movement,
-            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_object, despawn_explosions_on_timeout,
-            update_health, flash, spawn_flash_icon
+            laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_object, 
+            despawn_explosions_on_timeout, update_health, flash, spawn_flash_icon, shoot_enemy_laser,
+            enemy_laser_movement
         ))
         .run();
 }

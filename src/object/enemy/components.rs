@@ -6,3 +6,8 @@ use crate::object::SpawnedEntity;
 pub struct Enemy {}
 
 impl SpawnedEntity for Enemy {}
+
+#[derive(Component)]
+pub struct EnemyLaser {}
+
+impl SpawnedEntity for EnemyLaser {}
