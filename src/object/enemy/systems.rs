@@ -115,7 +115,6 @@ pub fn shoot_enemy_laser(
                 if enemy_entity.index() == entity.index() {
                     let start_vector = transform.translation.xy();
 
-                    println!("{:?}:, {:?}", start_vector.x, start_vector.y);
                     commands.spawn(
                         (
                             SpriteBundle {

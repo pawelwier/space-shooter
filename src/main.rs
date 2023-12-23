@@ -17,7 +17,9 @@ use game::{
     events::{
         HealthChange,
         Flash
-    }
+    }, 
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH
 };
 use object::{
     meteor::{
@@ -81,7 +83,7 @@ fn main() {
                 primary_window: Some(Window {
                     title: "SPACE SHOOTER".to_string(),
                     resizable: false,
-                    resolution: WindowResolution::new(800.0, 800.0),
+                    resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
                     ..Default::default()
                 }),
                 ..Default::default()

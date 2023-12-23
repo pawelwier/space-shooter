@@ -189,7 +189,7 @@ pub fn laser_hit_object(
     mut laser_query: Query<(&Transform, Entity), With<Laser>>,
     mut object_query: Query<(
         &Transform, Option<&Meteor>, Option<&Enemy>, Entity, &MovingObject
-    ), (With<MovingObject>, Without<PowerUp>)>,
+    ),  Or<(With<Meteor>, With<Enemy>)>>,
     asset_server: Res<AssetServer>,
     mut score_resource: ResMut<ScoreResource>,
     mut score_query: Query<&mut Text, With<ScoreComponent>>,
