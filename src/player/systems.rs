@@ -4,6 +4,7 @@ use bevy::{
 };
 
 use crate::explosion::systems::spawn_explosion;
+use crate::game::AppState;
 use crate::game::events::{HealthChange, Flash};
 use crate::game::systems::add_points_to_score;
 use crate::game::{
@@ -243,6 +244,7 @@ fn hit_player_damage(
     hps: f32,
     location: (f32, f32),
     health_change_event_writer: &mut EventWriter<HealthChange>,
+    app_state_next_state: &mut ResMut<NextState<AppState>>
 ) {
     let is_max = (health_resource.health + hps) >= 100.0;
     health_resource.health += if is_max { 100.0 - health_resource.health } else { hps };
@@ -255,6 +257,7 @@ fn hit_player_damage(
             (location.0, location.1),
             &asset_server
         );
+        app_state_next_state.set(AppState::GameOver);
     }
 }
 
@@ -276,7 +279,8 @@ pub fn object_hit_player(
     mut score_query: Query<&mut Text, With<ScoreComponent>>,
     mut player_params: ResMut<PlayerParams>,
     mut health_change_event_writer: EventWriter<HealthChange>,
-    mut flash_event_writer: EventWriter<Flash>
+    mut flash_event_writer: EventWriter<Flash>,
+    mut app_state_next_state: ResMut<NextState<AppState>>
 ) {
     for (player_transform, player_entity) in player_query.iter() {
         for object in object_query.iter() {
@@ -299,7 +303,8 @@ pub fn object_hit_player(
                     &mut player_params,
                     object.hps,
                     (player_transform.translation.x, player_transform.translation.y),
-                    &mut health_change_event_writer
+                    &mut health_change_event_writer,
+                    &mut app_state_next_state
                 );
 
                 if power_up_option.is_some() {

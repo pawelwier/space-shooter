@@ -1,26 +1,18 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::player::resources::PlayerParams;
+use crate::{player::resources::PlayerParams, utils::utils::draw_text, object::MovingObject, explosion::components::Explosion};
 
 use super::{
     resources::ScoreResource, 
-    events::{HealthChange, Flash},
-    components::{ScoreComponent, FlashComponent}
+    events::{
+        HealthChange,
+        Flash
+    },
+    components::{
+        ScoreComponent,
+        FlashComponent, HealthBar
+    }
 };
-
-fn draw_score_text(
-    asset_server: &AssetServer,
-    text: String
-) -> TextSection {
-    TextSection::new(
-        text,
-        TextStyle {
-            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-            font_size: 70.0,
-            ..default()
-        },
-    )
-}
 
 pub fn add_points_to_score(
     score: f32,
@@ -49,13 +41,15 @@ pub fn spawn_score(
         |parent| {
             parent.spawn((
                 TextBundle::from_sections([
-                    draw_score_text(
+                    draw_text(
                         &asset_server,
-                        "SCORE: ".to_string()
+                        "SCORE: ".to_string(),
+                        70.0
                     ),
-                    draw_score_text(
+                    draw_text(
                         &asset_server,
-                        "0".to_string()
+                        "0".to_string(),
+                        70.0
                     ),
                 ]),
                 ScoreComponent {},
@@ -92,17 +86,20 @@ pub fn spawn_health_bar(
     let health_left_px = hp_width_px * health;
 
     commands.spawn(
-        NodeBundle {
-            style: Style {
-                left: Val::Px(490.0),
-                top: Val::Px(10.0),
-                width: Val::Px(300.0),
-                height: Val::Px(50.0),
+        (
+            NodeBundle {
+                style: Style {
+                    left: Val::Px(490.0),
+                    top: Val::Px(10.0),
+                    width: Val::Px(300.0),
+                    height: Val::Px(50.0),
+                    ..Default::default()
+                },
+                background_color: Color::rgb(0.15, 0.15, 0.15).into(),
                 ..Default::default()
             },
-            background_color: Color::rgb(0.15, 0.15, 0.15).into(),
-            ..Default::default()
-        }
+            HealthBar {}
+        )
     ).clear_children()
     .with_children(
         |parent| {
@@ -158,4 +155,30 @@ pub fn spawn_flash_icon(
             }
         }
     }
+}
+
+pub fn clear_game(
+    mut commands: Commands,
+    mut object_query: Query<Entity, Or<(With<MovingObject>, With<Explosion>)>>,
+    mut score_resource:ResMut<ScoreResource>,
+    mut health_resource: ResMut<PlayerParams>
+) {
+    spawn_health_bar(&mut commands, 0.0);
+
+    score_resource.points = 0.0;
+
+    for entity in object_query.iter_mut() {
+        commands.entity(entity).despawn();
+    }
+
+    health_resource.can_flash = false;
+    health_resource.health = 100.0;
+}
+
+pub fn reset_score(
+    mut score_query: Query<&mut Text, With<ScoreComponent>>
+) {
+    for mut text in score_query.iter_mut() {
+        text.sections[1].value = "0".to_string();
+    } 
 }

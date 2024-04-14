@@ -12,15 +12,18 @@ use game::{
         spawn_score,
         update_health, 
         spawn_health_bar_init, 
-        spawn_flash_icon
+        spawn_flash_icon,
+        clear_game, reset_score
     }, 
     events::{
         HealthChange,
         Flash
     }, 
     WINDOW_HEIGHT,
-    WINDOW_WIDTH
+    WINDOW_WIDTH, 
+    AppState
 };
+use menu::systems::{spawn_menu, react_to_play_button, despawn_menu};
 use object::{
     meteor::{
         systems::{
@@ -66,9 +69,11 @@ pub mod player;
 pub mod object;
 pub mod explosion;
 pub mod game;
+pub mod menu;
+pub mod utils;
 
 fn main() {
-    // TODO: turn into plugins
+    // TODO: turn into plugins, refactor main menu / game over app state
     App::new()
         .init_resource::<MeteorSpawnTimer>()
         .init_resource::<EnemySpawnTimer>()
@@ -89,17 +94,26 @@ fn main() {
                 ..Default::default()
             })
         )
-        .add_systems(Startup, (
-            spawn_camera, spawn_player, spawn_score, spawn_health_bar_init
-        ))
+        .add_state::<AppState>()
+        .add_systems(Startup, spawn_camera)
+        .add_systems(OnEnter(AppState::MainMenu), spawn_menu)
+        .add_systems(OnExit(AppState::MainMenu), despawn_menu)
+        .add_systems(Update, react_to_play_button.run_if(in_state(AppState::MainMenu)))
+
+        .add_systems(OnEnter(AppState::Game), (spawn_player, spawn_score, spawn_health_bar_init, reset_score))
         .add_systems(Update, (
             tick_meteor_spawn_timer, player_movement, shoot_laser, object_hit_player,
             tick_enemy_spawn_timer, spawn_enemies_over_time, enemy_movement,
             tick_power_up_spawn_timer, spawn_power_ups_over_time, power_up_movement,
             laser_movement, meteor_movement, spawn_meteors_over_time, laser_hit_object, 
-            despawn_explosions_on_timeout, update_health, flash, spawn_flash_icon, shoot_enemy_laser,
-            enemy_laser_movement
-        ))
+            despawn_explosions_on_timeout, update_health, flash, spawn_flash_icon, 
+            shoot_enemy_laser, enemy_laser_movement
+        ).run_if(in_state(AppState::Game)))
+
+        .add_systems(OnEnter(AppState::GameOver), (spawn_menu, clear_game))
+        .add_systems(OnExit(AppState::GameOver), despawn_menu)
+        .add_systems(Update, react_to_play_button.run_if(in_state(AppState::GameOver)))
+
         .run();
 }
 
